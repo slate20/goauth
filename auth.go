@@ -1,7 +1,10 @@
 package goauth
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -20,11 +23,45 @@ type AuthService struct {
 	jwtSecret []byte
 }
 
-func NewAuthService(jwtSecret string) *AuthService {
+// Generate a random key of the specified length
+func generateRandomKey(length int) ([]byte, error) {
+	key := make([]byte, length)
+	_, err := rand.Read(key)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
+}
+
+func NewAuthService() (*AuthService, error) {
+	// Check for environment variable first
+	secretKey := os.Getenv("AUTH_SECRET_KEY")
+	var jwtSecret []byte
+
+	if secretKey == "" {
+		// If not set, generate a random key
+		var err error
+		jwtSecret, err = generateRandomKey(32) // 256-bit key
+		if err != nil {
+			return nil, err
+		}
+		// Save the key in the environment variable
+		encodedKey := base64.StdEncoding.EncodeToString(jwtSecret)
+		os.Setenv("AUTH_SECRET_KEY", encodedKey)
+		println("Generated new secret key:", encodedKey)
+	} else {
+		// If set, decode the key
+		var err error
+		jwtSecret, err = base64.StdEncoding.DecodeString(secretKey)
+		if err != nil {
+			return nil, errors.New("invalid AUTH_SECRET_KEY format")
+		}
+	}
+
 	return &AuthService{
 		users:     make(map[string]User),
-		jwtSecret: []byte(jwtSecret),
-	}
+		jwtSecret: jwtSecret,
+	}, nil
 }
 
 func (s *AuthService) Register(username, email, password string) error {
