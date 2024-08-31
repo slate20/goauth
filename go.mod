@@ -1,4 +1,4 @@
-module goauth
+module github.com/slate20/goauth
 
 go 1.23.0
 
