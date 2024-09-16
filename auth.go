@@ -303,3 +303,13 @@ func (s *AuthService) ResetPasswordWithSecurityAnswers(username string, answers 
 	_, err = s.db.Exec("UPDATE users SET password_hash = ? WHERE id = ?", string(hashedPassword), userID)
 	return err
 }
+
+func (s *AuthService) UpdateUserPassword(userID int, password string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.Exec("UPDATE users SET password_hash = ? WHERE id = ?", string(hashedPassword), userID)
+	return err
+}
